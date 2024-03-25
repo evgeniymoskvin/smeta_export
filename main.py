@@ -11,6 +11,12 @@ folder_walk = os.walk(current_folder, onerror=None, followlinks=False)
 new_excel_file = openpyxl.Workbook()
 ws_new_excel_file = new_excel_file.active
 ws_new_excel_file.title = 'Export'
+folder_walk_list =[]
+
+for i in folder_walk:
+    folder_walk_list.append(i)
+    print(i)
+
 
 title_row = ['№', '№ поз.', '№ ЛСР', '№ ОСР', 'Специальность', 'Основание ЛСР', 'Тип затрат', 'Обоснование позиции',
              'Наименование', 'Кол-во', 'Стоимость за единицу (в базисном уровне)',
@@ -23,7 +29,7 @@ title_row = ['№', '№ поз.', '№ ЛСР', '№ ОСР', 'Специаль
 ws_new_excel_file.append(title_row)
 count = 1
 
-for folder in folder_walk:
+for folder in folder_walk_list:
     print(f'Папка: {folder[0]}')
     for current_file in folder[2]:
         try:
