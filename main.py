@@ -40,7 +40,7 @@ for folder in folder_walk_list:
             # Получение индексов для оборудования и материалов
             # Определение таблицы ЛСР
             for i in range(len(wb.sheetnames)):
-                if re.search('ЛСР', str(wb.sheetnames[i])):
+                if re.search('ЛС', str(wb.sheetnames[i]).upper()):
                     worksheet_for_kf_name = str(wb.sheetnames[i])
                 else:
                     worksheet_for_kf_name = str(wb.sheetnames[1])
@@ -53,22 +53,22 @@ for folder in folder_walk_list:
             kf_equipment_count = first_list_len
             kf_smr_count = first_list_len
             kf_smr = 0
-            while kf_smr == 0:
-                cell_kf = f'A{kf_equipment_count}'
+            while kf_smr == 0 and kf_smr_count > 0:
+                cell_kf = f'A{kf_smr_count}'
                 if 'с учётом индекса пересчёта на СМР:' in str(worksheet_for_kf[cell_kf].value):
                     kf_smr_str = worksheet_for_kf[cell_kf].value
                     kf_smr_re = str(re.findall(r'\d{1,4},\d{1,4}', kf_smr_str)[0])
                     kf_smr = float('.'.join(kf_smr_re.split(',')))
                     # kf_smr = float(kf_smr_re)
-                kf_equipment_count -= 1
-            while kf_equipment == 0:
-                cell_kf = f'A{kf_smr_count}'
+                kf_smr_count -= 1
+            while kf_equipment == 0 and kf_equipment_count > 0:
+                cell_kf = f'A{kf_equipment_count}'
                 if 'с учётом индекса пересчёта на оборудование:' in str(worksheet_for_kf[cell_kf].value):
                     kf_equipment_str = worksheet_for_kf[cell_kf].value
                     kf_equipment_re = str(re.findall(r'\d{1,4},\d{1,4}', kf_equipment_str)[0])
                     kf_equipment = float('.'.join(kf_equipment_re.split(',')))
                     # kf_equipment = float(kf_equipment_re)
-                kf_smr_count -= 1
+                kf_equipment_count -= 1
 
             print(f'Коэффициент оборудования kf_equipment = {kf_equipment}')
             print(f'Коэффициент СМР kf_smr = {kf_smr}')
