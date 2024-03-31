@@ -11,12 +11,11 @@ folder_walk = os.walk(current_folder, onerror=None, followlinks=False)
 new_excel_file = openpyxl.Workbook()
 ws_new_excel_file = new_excel_file.active
 ws_new_excel_file.title = 'Export'
-folder_walk_list =[]
+folder_walk_list = []
 
 for i in folder_walk:
     folder_walk_list.append(i)
     print(i)
-
 
 title_row = ['№', '№ поз.', '№ ЛСР', '№ ОСР', 'Специальность', 'Основание ЛСР', 'Тип затрат', 'Обоснование позиции',
              'Наименование', 'Кол-во', 'Стоимость за единицу (в базисном уровне)',
@@ -100,54 +99,60 @@ for folder in folder_walk_list:
                 print(f'Ошибка: {e}')
 
             for i in range(1, book_len):
-                cell = f'EL{i}'
+                cell = f'EG{i}'
                 value = str(worksheet[cell].value).upper()
                 equipment_flag = re.search('ОБОРУДОВАНИЕ', value)
                 material_flag = re.search('МАТЕРИАЛ', value)
+                zatrati_flag = re.search('ЗАТРАТЫ',
+                                         str(worksheet[f'G{i}'].value).upper())  # Проверка по слову "Затраты на..."
+                # print(f'Затрата {zatrati_flag}, {str(worksheet[f"G{i}"].value).upper()}')
+                obosnovanie_position_cell = f'BJ{i}'
+                obosnovanie_position = worksheet[obosnovanie_position_cell].value
+                if str(worksheet[f'E{i}'].value).upper() == '' or (zatrati_flag):
+                    print(f'Пропущено: строка {i}, zatrati_flag = {zatrati_flag}, столбец Е: "{str(worksheet[f"E{i}"].value).upper()}"')
+                else:
+                    if equipment_flag or material_flag:
+                        position_lsr_cell = f'E{i}'
+                        position_lsr = worksheet[position_lsr_cell].value
+                        obosnovanie_lsr_cell = f'CN{i}'
+                        obosnovanie_lsr = str(worksheet[obosnovanie_lsr_cell].value)
 
-                if equipment_flag or material_flag:
-                    position_lsr_cell = f'E{i}'
-                    position_lsr = worksheet[position_lsr_cell].value
-                    obosnovanie_lsr_cell = f'CN{i}'
-                    obosnovanie_lsr = str(worksheet[obosnovanie_lsr_cell].value)[1:-1]
-                    obosnovanie_position_cell = f'BJ{i}'
-                    obosnovanie_position = worksheet[obosnovanie_position_cell].value
 
-                    name_cell = f'G{i}'
-                    name_value = worksheet[name_cell].value
-                    amount_cell = f'I{i}'
-                    amount_value = worksheet[amount_cell].value
+                        name_cell = f'G{i}'
+                        name_value = worksheet[name_cell].value
+                        amount_cell = f'I{i}'
+                        amount_value = worksheet[amount_cell].value
 
-                    price_per_one_basis = float(worksheet[f'AC{i}'].value)
-                    price_total_basis = float(worksheet[f'O{i}'].value)
+                        price_per_one_basis = float(worksheet[f'AC{i}'].value)
+                        price_total_basis = float(worksheet[f'O{i}'].value)
 
-                    if equipment_flag:
-                        type_zatrat = 'ОБ'
-                        price_per_one_now = kf_equipment * float(worksheet[f'AC{i}'].value) * 1.012 * 1.03
-                        # price_per_one_now = 6.16 * float(worksheet[f'AC{i}'].value) * 1.012 * 1.03
-                        price_total_now = price_per_one_now * amount_value
-                    elif material_flag:
-                        type_zatrat = 'МАТ'
-                        if re.search('ФССЦ', obosnovanie_position):
-                            price_per_one_now = kf_smr * float(worksheet[f'AC{i}'].value)
-                            # price_per_one_now = 13.16 * float(worksheet[f'AC{i}'].value)
+                        if equipment_flag:
+                            type_zatrat = 'ОБ'
+                            price_per_one_now = kf_equipment * float(worksheet[f'AC{i}'].value) * 1.012 * 1.03
+                            # price_per_one_now = 6.16 * float(worksheet[f'AC{i}'].value) * 1.012 * 1.03
                             price_total_now = price_per_one_now * amount_value
+                        elif material_flag:
+                            type_zatrat = 'МАТ'
+                            if re.search('ФССЦ', obosnovanie_position):
+                                price_per_one_now = kf_smr * float(worksheet[f'AC{i}'].value)
+                                # price_per_one_now = 13.16 * float(worksheet[f'AC{i}'].value)
+                                price_total_now = price_per_one_now * amount_value
+                            else:
+                                price_per_one_now = kf_smr * float(worksheet[f'AC{i}'].value) * 1.02
+                                # price_per_one_now = 13.16 * float(worksheet[f'AC{i}'].value) * 1.2
+                                price_total_now = price_per_one_now * amount_value
                         else:
-                            price_per_one_now = kf_smr * float(worksheet[f'AC{i}'].value) * 1.02
-                            # price_per_one_now = 13.16 * float(worksheet[f'AC{i}'].value) * 1.2
-                            price_total_now = price_per_one_now * amount_value
-                    else:
-                        type_zatrat = ''
-                        price_per_one_now = ''
-                        price_total_now = ''
+                            type_zatrat = ''
+                            price_per_one_now = ''
+                            price_total_now = ''
 
-                    row = [count, position_lsr, number_lsr, number_osr, spec, obosnovanie_lsr, type_zatrat,
-                           obosnovanie_position, name_value, amount_value, price_per_one_basis, price_total_basis,
-                           price_per_one_now, price_total_now, hyperlink, kf_equipment, kf_smr, object_name]
+                        row = [count, position_lsr, number_lsr, number_osr, spec, obosnovanie_lsr, type_zatrat,
+                               obosnovanie_position, name_value, amount_value, price_per_one_basis, price_total_basis,
+                               price_per_one_now, price_total_now, hyperlink, kf_equipment, kf_smr, object_name]
 
-                    ws_new_excel_file.append(row)
-                    print(f'Row №{i}: {row}')
-                    count += 1
+                        ws_new_excel_file.append(row)
+                        print(f'Row №{i}: {row}')
+                        count += 1
             print(f"Файл {current_file} отработан")
 
             # print(excel.head())
