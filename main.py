@@ -82,8 +82,10 @@ for folder in folder_walk_list:
             object_name = worksheet['G4'].value  # Название объекта
             print(f'Объект: {object_name}')
             number_lsr_list = str(worksheet['F12'].value).split(' ')
-            number_osr = str(number_lsr_list[1])[1:-1]
+            # number_osr = str(number_lsr_list[1])[1:-1]
             number_lsr = str(number_lsr_list[0])
+            number_osr_list = number_lsr.split('-')
+            number_osr = f'{number_osr_list[1]}-{number_osr_list[2]}'
             spec = ''
             try:
                 spec_temp = int(str(number_lsr_list[0])[-3:][1:-1])
@@ -107,9 +109,19 @@ for folder in folder_walk_list:
                                          str(worksheet[f'G{i}'].value).upper())  # Проверка по слову "Затраты на..."
                 # print(f'Затрата {zatrati_flag}, {str(worksheet[f"G{i}"].value).upper()}')
                 obosnovanie_position_cell = f'BJ{i}'
+                obosnovanie_position_cell_fer_flag = re.search('ФЕР-',
+                                         str(worksheet[f'BJ{i}'].value))
+                obosnovanie_position_cell_ferm_flag = re.search('ФЕРм-',
+                                                               str(worksheet[f'BJ{i}'].value))
                 obosnovanie_position = worksheet[obosnovanie_position_cell].value
-                if str(worksheet[f'E{i}'].value).upper() == '' or (zatrati_flag):
-                    print(f'Пропущено: строка {i}, zatrati_flag = {zatrati_flag}, столбец Е: "{str(worksheet[f"E{i}"].value).upper()}"')
+                if str(worksheet[f'E{i}'].value).upper() == '':
+                    print(f'Пропущено: строка {i}, столбец E: "{str(worksheet[f"E{i}"].value).upper()}"')
+                elif zatrati_flag:
+                    print(
+                        f'Пропущено: строка {i}, zatrati_flag = {zatrati_flag}, столбец G: "{str(worksheet[f"G{i}"].value).upper()}"')
+                elif obosnovanie_position_cell_fer_flag and obosnovanie_position_cell_ferm_flag:
+                    print(
+                        f'Пропущено: строка {i}, ferm_flag = {obosnovanie_position_cell_ferm_flag}, fer_flag = {obosnovanie_position_cell_fer_flag}, столбец BJ: "{str(worksheet[f"BJ{i}"].value)}"')
                 else:
                     if equipment_flag or material_flag:
                         position_lsr_cell = f'E{i}'
