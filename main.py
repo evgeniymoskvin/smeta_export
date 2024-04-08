@@ -1,6 +1,7 @@
 import openpyxl
 import os, datetime
 import re
+import copy
 
 current_folder = input("Введите путь к папке: ")
 print(f'Указана папка: {current_folder}')
@@ -13,6 +14,10 @@ ws_new_excel_file = new_excel_file.active
 ws_new_excel_file.title = 'Export'
 folder_walk_list = []
 
+new_excel_log_file = openpyxl.Workbook()
+ws_new_excel_log_file = new_excel_log_file.active
+ws_new_excel_log_file.title = 'Exception'
+
 for i in folder_walk:
     folder_walk_list.append(i)
     print(i)
@@ -24,6 +29,9 @@ title_row = ['№', '№ поз.', '№ ЛСР', '№ ОСР', 'Специаль
              'Общая стоимость (в текущем уровне цен  без НДС)',
              'Связанная смета', 'ОБ', 'СМР',
              'Стройка']
+
+title_row_log = ['№', 'Exception', 'Link']
+ws_new_excel_log_file.append(title_row_log)
 
 ws_new_excel_file.append(title_row)
 count = 1
@@ -52,6 +60,8 @@ for folder in folder_walk_list:
             kf_equipment_count = first_list_len
             kf_smr_count = first_list_len
             kf_smr = 0
+
+
             while kf_smr == 0 and kf_smr_count > 0:
                 cell_kf = f'A{kf_smr_count}'
                 if 'с учётом индекса пересчёта на СМР:' in str(worksheet_for_kf[cell_kf].value):
@@ -69,6 +79,8 @@ for folder in folder_walk_list:
                     # kf_equipment = float(kf_equipment_re)
                 kf_equipment_count -= 1
 
+            kf_equipment_global = copy.copy(kf_equipment)
+            kf_smr_global = copy.copy(kf_smr)
             print(f'Коэффициент оборудования kf_equipment = {kf_equipment}')
             print(f'Коэффициент СМР kf_smr = {kf_smr}')
 
@@ -102,17 +114,25 @@ for folder in folder_walk_list:
 
             for i in range(1, book_len):
                 cell = f'EG{i}'
+                if kf_equipment_global == 0:
+                    if worksheet[f'BC{i}'].value:
+                        kf_equipment = float(worksheet[f'BC{i}'].value)
+                        # print('kf_equipment', type(worksheet[f'BC{i}'].value), worksheet[f'BC{i}'].value)
+                if kf_smr_global == 0:
+                    if worksheet[f'BC{i}'].value:
+                        kf_smr = float(worksheet[f'BC{i}'].value)
+                        # print('kf_smr', type(worksheet[f'BC{i}'].value), worksheet[f'BC{i}'].value)
                 value = str(worksheet[cell].value).upper()
                 equipment_flag = re.search('ОБОРУДОВАНИЕ', value)
                 material_flag = re.search('МАТЕРИАЛ', value)
                 zatrati_flag = re.search('ЗАТРАТЫ',
                                          str(worksheet[f'G{i}'].value).upper())  # Проверка по слову "Затраты на..."
                 # print(f'Затрата {zatrati_flag}, {str(worksheet[f"G{i}"].value).upper()}')
-                obosnovanie_position_cell = f'BJ{i}'
+                obosnovanie_position_cell = f'F{i}'
                 obosnovanie_position_cell_fer_flag = re.search('ФЕР-',
-                                         str(worksheet[f'BJ{i}'].value))
+                                                               str(worksheet[f'F{i}'].value))
                 obosnovanie_position_cell_ferm_flag = re.search('ФЕРм-',
-                                                               str(worksheet[f'BJ{i}'].value))
+                                                                str(worksheet[f'F{i}'].value))
                 obosnovanie_position = worksheet[obosnovanie_position_cell].value
                 if str(worksheet[f'E{i}'].value).upper() == '':
                     print(f'Пропущено: строка {i}, столбец E: "{str(worksheet[f"E{i}"].value).upper()}"')
@@ -128,7 +148,6 @@ for folder in folder_walk_list:
                         position_lsr = worksheet[position_lsr_cell].value
                         obosnovanie_lsr_cell = f'CN{i}'
                         obosnovanie_lsr = str(worksheet[obosnovanie_lsr_cell].value)
-
 
                         name_cell = f'G{i}'
                         name_value = worksheet[name_cell].value
@@ -170,10 +189,19 @@ for folder in folder_walk_list:
             # print(excel.head())
         except Exception as e:
             print(f'Ошибка выполнения файла {current_file}. {e}')
+            file_path_full = os.path.join(folder[0], current_file)
+            hyperlink = f'{file_path_full}'
+            row_exception = [count, str(e), hyperlink]
+            ws_new_excel_log_file.append(row_exception)
+
         print('-----------------------')
 
 now_time = f'{datetime.datetime.now().year}-{datetime.datetime.now().month}-{datetime.datetime.now().day}_{datetime.datetime.now().hour}-{datetime.datetime.now().minute}-{datetime.datetime.now().second}'
 file_export_name = f'export-{now_time}.xlsx'
+file_export_log_name = f'export-log-{now_time}.xlsx'
 file_export_path_full = os.path.join(current_folder, file_export_name)
+file_export_path_full_log = os.path.join(current_folder, file_export_log_name)
 print(f'Файл {file_export_path_full} готов.')
+
 new_excel_file.save(file_export_path_full)
+new_excel_log_file.save(file_export_path_full_log)
